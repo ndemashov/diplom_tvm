@@ -21,12 +21,22 @@ from tvm.relax.training.trainer import Trainer
 from tvm.relax.training.optimizer import Adam
 from tvm.relax.training.loss import CategoricalCrossEntropyLoss
 
+#path to test dataset
+TEST_DIR ='test_features'
+#path to modeld
+MODELS_DIR = 'models'
+#path to so files
+SO_DIR = ''
+
 def createwidgets():
     root.cameraLabel = Label(root, bg="#21556e", borderwidth=3, relief="groove")
     root.cameraLabel.grid(row=2, column=1, padx=10, pady=10, columnspan = 2)
 
-    root.changeModel = Button(root, text="Change Model", command=changeModel, bg="#7b9eb0", font=('Shentox',15), width=15)
-    root.changeModel.grid(row=6, column=1, padx=10, pady=10, columnspan = 2)
+    root.changeModel = Button(root, text="Model", command=changeModel, bg="#7b9eb0", font=('Shentox',15), width=15)
+    root.changeModel.grid(row=6, column=1, padx=10, pady=10)
+
+    root.changeModel = Button(root, text="Test dataset", command=chengeTestDataset, bg="#7b9eb0", font=('Shentox',15), width=15)
+    root.changeModel.grid(row=6, column=2, padx=10, pady=10)
 
     root.predictedEmotion = Label(root, bg="#21556e", fg="#ffffff", text="Predicted emotion :", font=('Shentox', 15))
     root.predictedEmotion.grid(row=3, column=1, padx=10, pady=10)
@@ -69,9 +79,22 @@ def get_label(features_file):
 def load_features(file_name):
     with open(file_name, 'rb') as f:
         return pickle.load(f)
+    
+def chengeTestDataset():
+    model_file = filedialog.askdirectory()
+    global TEST_DIR
+    TEST_DIR_TEMP = TEST_DIR
+    TEST_DIR = model_file
+    if TEST_DIR == TEST_DIR_TEMP:
+        return
+    try:
+        checkAccuracy()
+        messagebox.showinfo("SUCCESS", "Test dataset has been changed")
+    except:
+        messagebox.showinfo("ERROR", "Wrong test dataset!")
+        TEST_DIR = TEST_DIR_TEMP
 
 def checkAccuracy():
-    TEST_DIR = 'test_features'
     test_features = os.listdir(TEST_DIR)
     prediction, labels = [], []
     for test_file in test_features:
@@ -91,14 +114,14 @@ def checkAccuracy():
 
 
 def changeModel():
-    model_file = filedialog.askopenfilename(initialdir="models")
+    model_file = filedialog.askopenfilename(initialdir=MODELS_DIR)
     trained_times = model_file.split('.')[0][-1]
     with open(model_file, 'rb') as f:
         model_params = pickle.load(f)
 
     emotion_predictor.load_params(model_params)
 
-    if trained_times != 0 :
+    if trained_times != '0' :
         root.model.config(text = f"trained with {trained_times} videos per emotion")
     else:
         root.model.config(text = "without user adaptation")
@@ -106,10 +129,10 @@ def changeModel():
     checkAccuracy()
 
 def setup_models():
-    feature_extractor_name = "features_extractor.so"
+    feature_extractor_name = os.path.join(SO_DIR, 'features_extractor.so')
     vm_feature_extractor = relax.VirtualMachine(tvm.runtime.load_module(feature_extractor_name), tvm.cpu())
 
-    fer_model_name = "fer.so"
+    fer_model_name = os.path.join(SO_DIR, 'fer.so')
     vm_fer = relax.VirtualMachine(tvm.runtime.load_module(fer_model_name), tvm.cpu())
 
     @I.ir_module
@@ -143,7 +166,7 @@ def setup_models():
 
     trainer = Trainer(train_mod, vm_fer, dev, False)
 
-    with open('models/fer_model_params_trained0.pkl', 'rb') as f:
+    with open(os.path.join(MODELS_DIR, 'fer_model_params_trained0.pkl'), 'rb') as f:
         model_params = pickle.load(f)
 
     trainer.load_params(model_params)
