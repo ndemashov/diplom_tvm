@@ -22,11 +22,11 @@ from tvm.relax.training.optimizer import Adam
 from tvm.relax.training.loss import CategoricalCrossEntropyLoss
 
 #path to test dataset
-TEST_DIR ='test_features'
+TEST_DIR ='/home/user/diplom/diplom_tvm/GUI/test_features'
 #path to modeld
-MODELS_DIR = 'models'
+MODELS_DIR = '/home/user/diplom/diplom_tvm/GUI/models'
 #path to so files
-SO_DIR = ''
+SO_DIR = '/home/user/diplom/diplom_tvm/GUI'
 
 def createwidgets():
     root.cameraLabel = Label(root, bg="#21556e", borderwidth=3, relief="groove")
